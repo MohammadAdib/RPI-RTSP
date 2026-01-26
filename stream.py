@@ -172,10 +172,12 @@ class RTSPStreamer:
         rpicam_cmd = [
             "rpicam-vid",
             "-t", "0",  # Run indefinitely
+            "-n",  # No preview window
             "--width", str(self.config.width),
             "--height", str(self.config.height),
             "--framerate", str(self.config.fps),
             "--codec", "h264",
+            "--libav-format", "h264",  # Raw H.264 output format
             "--profile", "baseline",
             "--level", "4.1",
             "--intra", "15",  # IDR frame interval
