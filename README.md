@@ -24,7 +24,7 @@ git clone https://github.com/YourUsername/RPI-RTSP.git ~/RPI-RTSP
 
 # Run the setup script
 cd ~/RPI-RTSP
-./setup.sh
+bash setup.sh
 ```
 
 The script will:
