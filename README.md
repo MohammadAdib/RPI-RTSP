@@ -16,7 +16,35 @@ Lightweight RTSP streamer for Raspberry Pi cameras. Automatically streams your P
 - Raspberry Pi Camera Module (v1, v2, v3, or HQ Camera)
 - Raspbian OS (Bookworm or newer recommended)
 
-## Quick Setup
+## Quick Setup (Automated)
+
+```bash
+# Clone this repository
+git clone https://github.com/YourUsername/RPI-RTSP.git ~/RPI-RTSP
+
+# Run the setup script
+cd ~/RPI-RTSP
+./setup.sh
+```
+
+The script will:
+- Install dependencies (ffmpeg, libcamera-apps)
+- Download and install MediaMTX
+- Create the config file at `~/Desktop/stream.json`
+- Set up the systemd service for auto-start on boot
+
+After setup, enable the camera if not already done:
+```bash
+sudo raspi-config
+# Navigate to: Interface Options → Camera → Enable
+sudo reboot
+```
+
+After reboot, the stream starts automatically at: `rtsp://<pi-ip>:8554/stream`
+
+---
+
+## Manual Setup
 
 ### 1. Enable the Camera
 
