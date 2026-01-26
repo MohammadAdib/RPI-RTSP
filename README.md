@@ -28,7 +28,7 @@ bash setup.sh
 ```
 
 The script will:
-- Install dependencies (ffmpeg, libcamera-apps)
+- Install dependencies (ffmpeg, rpicam-apps)
 - Download and install MediaMTX
 - Create the config file at `~/Desktop/stream.json`
 - Set up the systemd service for auto-start on boot
@@ -62,8 +62,8 @@ Reboot if prompted.
 # Update package list
 sudo apt update
 
-# Install ffmpeg and libcamera tools
-sudo apt install -y ffmpeg libcamera-apps
+# Install ffmpeg and rpicam tools
+sudo apt install -y ffmpeg rpicam-apps
 ```
 
 ### 3. Install MediaMTX
@@ -246,7 +246,7 @@ sudo systemctl status rpi-rtsp
 
 ```bash
 # Check if camera is detected
-libcamera-hello --list-cameras
+rpicam-hello --list-cameras
 
 # If no cameras found:
 # 1. Ensure camera cable is properly connected

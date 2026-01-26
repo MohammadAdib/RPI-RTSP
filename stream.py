@@ -63,7 +63,7 @@ class RTSPStreamer:
 
     def __init__(self, config: StreamConfig):
         self.config = config
-        self.libcamera_proc: Optional[subprocess.Popen] = None
+        self.rpicam_proc: Optional[subprocess.Popen] = None
         self.mediamtx_proc: Optional[subprocess.Popen] = None
         self.running = False
 
@@ -113,7 +113,7 @@ class RTSPStreamer:
 
     def _kill_existing_processes(self) -> None:
         """Kill any existing streaming processes."""
-        for proc_name in ["mediamtx", "libcamera-vid"]:
+        for proc_name in ["mediamtx", "rpicam-vid"]:
             try:
                 subprocess.run(
                     ["pkill", "-f", proc_name],
@@ -162,15 +162,15 @@ class RTSPStreamer:
         print("MediaMTX started successfully")
         return True
 
-    def _start_libcamera(self) -> bool:
-        """Start libcamera-vid to capture and stream."""
-        # Build libcamera-vid command
+    def _start_rpicam(self) -> bool:
+        """Start rpicam-vid to capture and stream."""
+        # Build rpicam-vid command
         # Output to stdout in H.264 format, pipe to ffmpeg for RTSP
         rtsp_target = f"rtsp://127.0.0.1:{self.config.port}/{self.config.path}"
 
-        # Use libcamera-vid with inline output to ffmpeg
-        libcamera_cmd = [
-            "libcamera-vid",
+        # Use rpicam-vid with inline output to ffmpeg
+        rpicam_cmd = [
+            "rpicam-vid",
             "-t", "0",  # Run indefinitely
             "--width", str(self.config.width),
             "--height", str(self.config.height),
@@ -200,26 +200,26 @@ class RTSPStreamer:
         print(f"RTSP URL: {rtsp_target}")
 
         try:
-            # Start libcamera-vid, pipe to ffmpeg
-            self.libcamera_proc = subprocess.Popen(
-                libcamera_cmd,
+            # Start rpicam-vid, pipe to ffmpeg
+            self.rpicam_proc = subprocess.Popen(
+                rpicam_cmd,
                 stdout=subprocess.PIPE,
                 stderr=subprocess.PIPE
             )
 
             self.ffmpeg_proc = subprocess.Popen(
                 ffmpeg_cmd,
-                stdin=self.libcamera_proc.stdout,
+                stdin=self.rpicam_proc.stdout,
                 stdout=subprocess.PIPE,
                 stderr=subprocess.PIPE
             )
 
-            # Allow libcamera stdout to be consumed by ffmpeg
-            self.libcamera_proc.stdout.close()
+            # Allow rpicam stdout to be consumed by ffmpeg
+            self.rpicam_proc.stdout.close()
 
         except FileNotFoundError as e:
             print(f"ERROR: Required tool not found: {e}")
-            print("Make sure libcamera-vid and ffmpeg are installed.")
+            print("Make sure rpicam-vid and ffmpeg are installed.")
             return False
         except Exception as e:
             print(f"ERROR: Failed to start streaming: {e}")
@@ -227,9 +227,9 @@ class RTSPStreamer:
 
         time.sleep(2)  # Give it time to initialize
 
-        if self.libcamera_proc.poll() is not None:
-            stderr = self.libcamera_proc.stderr.read().decode() if self.libcamera_proc.stderr else ""
-            print(f"ERROR: libcamera-vid exited unexpectedly: {stderr}")
+        if self.rpicam_proc.poll() is not None:
+            stderr = self.rpicam_proc.stderr.read().decode() if self.rpicam_proc.stderr else ""
+            print(f"ERROR: rpicam-vid exited unexpectedly: {stderr}")
             return False
 
         print("Stream started successfully!")
@@ -251,7 +251,7 @@ class RTSPStreamer:
         if not self._start_mediamtx():
             return False
 
-        if not self._start_libcamera():
+        if not self._start_rpicam():
             self.stop()
             return False
 
@@ -265,7 +265,7 @@ class RTSPStreamer:
 
         for proc, name in [
             (getattr(self, 'ffmpeg_proc', None), "ffmpeg"),
-            (self.libcamera_proc, "libcamera-vid"),
+            (self.rpicam_proc, "rpicam-vid"),
             (self.mediamtx_proc, "mediamtx"),
         ]:
             if proc and proc.poll() is None:
@@ -287,8 +287,8 @@ class RTSPStreamer:
                 if hasattr(self, 'ffmpeg_proc') and self.ffmpeg_proc.poll() is not None:
                     print("FFmpeg process ended unexpectedly")
                     break
-                if self.libcamera_proc and self.libcamera_proc.poll() is not None:
-                    print("libcamera-vid process ended unexpectedly")
+                if self.rpicam_proc and self.rpicam_proc.poll() is not None:
+                    print("rpicam-vid process ended unexpectedly")
                     break
                 if self.mediamtx_proc and self.mediamtx_proc.poll() is not None:
                     print("MediaMTX process ended unexpectedly")
