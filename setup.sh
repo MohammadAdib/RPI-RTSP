@@ -43,8 +43,8 @@ echo "[1/6] Updating package list..."
 sudo apt update
 
 echo ""
-echo "[2/6] Installing dependencies (ffmpeg, rpicam-apps)..."
-sudo apt install -y ffmpeg rpicam-apps
+echo "[2/6] Installing dependencies..."
+# No additional packages needed - MediaMTX has native Pi camera support
 
 echo ""
 echo "[3/6] Installing MediaMTX..."

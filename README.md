@@ -56,17 +56,7 @@ Navigate to: **Interface Options** → **Camera** → **Enable**
 
 Reboot if prompted.
 
-### 2. Install Dependencies
-
-```bash
-# Update package list
-sudo apt update
-
-# Install ffmpeg and rpicam tools
-sudo apt install -y ffmpeg rpicam-apps
-```
-
-### 3. Install MediaMTX
+### 2. Install MediaMTX
 
 ```bash
 # Download MediaMTX (check for latest version at https://github.com/bluenviron/mediamtx/releases)
@@ -84,7 +74,7 @@ sudo mv mediamtx /usr/local/bin/
 sudo chmod +x /usr/local/bin/mediamtx
 ```
 
-### 4. Install the Streaming Script
+### 3. Install the Streaming Script
 
 ```bash
 # Clone this repository
@@ -94,7 +84,7 @@ git clone https://github.com/YourUsername/RPI-RTSP.git ~/RPI-RTSP
 chmod +x ~/RPI-RTSP/stream.py
 ```
 
-### 5. Create Configuration File
+### 4. Create Configuration File
 
 The script will auto-create a default config on first run, or you can create it manually:
 
@@ -110,7 +100,7 @@ cat > ~/Desktop/stream.json << 'EOF'
 EOF
 ```
 
-### 6. Test the Stream
+### 5. Test the Stream
 
 ```bash
 # Run manually first to verify everything works
@@ -135,7 +125,7 @@ Stream started successfully!
 
 Press `Ctrl+C` to stop.
 
-### 7. Set Up Auto-Start on Boot
+### 6. Set Up Auto-Start on Boot
 
 Create a systemd service:
 

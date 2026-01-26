@@ -2,6 +2,7 @@
 """
 Lightweight RTSP streamer for Raspberry Pi cameras.
 Reads configuration from ~/Desktop/stream.json and streams via MediaMTX.
+Uses MediaMTX's native Raspberry Pi camera support.
 """
 
 import json
@@ -59,11 +60,10 @@ class StreamConfig:
 
 
 class RTSPStreamer:
-    """Manages the RTSP streaming pipeline."""
+    """Manages the RTSP streaming using MediaMTX's native Pi camera support."""
 
     def __init__(self, config: StreamConfig):
         self.config = config
-        self.rpicam_proc: Optional[subprocess.Popen] = None
         self.mediamtx_proc: Optional[subprocess.Popen] = None
         self.running = False
 
@@ -113,41 +113,44 @@ class RTSPStreamer:
 
     def _kill_existing_processes(self) -> None:
         """Kill any existing streaming processes."""
-        for proc_name in ["mediamtx", "rpicam-vid"]:
-            try:
-                subprocess.run(
-                    ["pkill", "-f", proc_name],
-                    capture_output=True,
-                    timeout=5
-                )
-            except Exception:
-                pass
+        try:
+            subprocess.run(
+                ["pkill", "-f", "mediamtx"],
+                capture_output=True,
+                timeout=5
+            )
+        except Exception:
+            pass
         time.sleep(0.5)
 
     def _start_mediamtx(self) -> bool:
-        """Start the MediaMTX RTSP server."""
+        """Start MediaMTX with native Pi camera support."""
         mediamtx_path = self._find_mediamtx()
         if not mediamtx_path:
             print("ERROR: MediaMTX not found. Please install it first.")
             return False
 
-        # Build MediaMTX command with inline config
-        cmd = [
-            mediamtx_path,
-        ]
-
-        # Set environment for MediaMTX configuration
+        # Configure MediaMTX via environment variables
+        # Using native rpiCamera source
         env = os.environ.copy()
-        env["MTX_PROTOCOLS"] = "tcp"
         env["MTX_RTSPADDRESS"] = f":{self.config.port}"
+        env["MTX_PATHS_" + self.config.path.upper() + "_SOURCE"] = "rpiCamera"
+        env["MTX_PATHS_" + self.config.path.upper() + "_RPICAMERAWIDTH"] = str(self.config.width)
+        env["MTX_PATHS_" + self.config.path.upper() + "_RPICAMERAHEIGHT"] = str(self.config.height)
+        env["MTX_PATHS_" + self.config.path.upper() + "_RPICAMERAFPS"] = str(self.config.fps)
+        env["MTX_PATHS_" + self.config.path.upper() + "_RPICAMERAIDRPERIOD"] = "15"
+        env["MTX_PATHS_" + self.config.path.upper() + "_RPICAMERAPROFILE"] = "baseline"
+        env["MTX_PATHS_" + self.config.path.upper() + "_RPICAMERALEVEL"] = "4.1"
 
         print(f"Starting MediaMTX on port {self.config.port}...")
+        print(f"Resolution: {self.config.resolution}")
+        print(f"FPS: {self.config.fps}")
 
         try:
             self.mediamtx_proc = subprocess.Popen(
-                cmd,
+                [mediamtx_path],
                 stdout=subprocess.PIPE,
-                stderr=subprocess.PIPE,
+                stderr=subprocess.STDOUT,
                 env=env
             )
         except Exception as e:
@@ -157,88 +160,18 @@ class RTSPStreamer:
         # Wait for RTSP port to be available
         if not self._wait_for_port("127.0.0.1", self.config.port):
             print("ERROR: MediaMTX failed to start (port not available)")
+            # Print any output for debugging
+            if self.mediamtx_proc.stdout:
+                output = self.mediamtx_proc.stdout.read(4096).decode()
+                if output:
+                    print(f"MediaMTX output: {output}")
             return False
 
         print("MediaMTX started successfully")
         return True
 
-    def _start_rpicam(self) -> bool:
-        """Start rpicam-vid to capture and stream."""
-        # Build rpicam-vid command
-        # Output to stdout in H.264 format, pipe to ffmpeg for RTSP
-        rtsp_target = f"rtsp://127.0.0.1:{self.config.port}/{self.config.path}"
-
-        # Use rpicam-vid with inline output to ffmpeg
-        rpicam_cmd = [
-            "rpicam-vid",
-            "-t", "0",  # Run indefinitely
-            "-n",  # No preview window
-            "--width", str(self.config.width),
-            "--height", str(self.config.height),
-            "--framerate", str(self.config.fps),
-            "--codec", "h264",
-            "--libav-format", "h264",  # Raw H.264 output format
-            "--profile", "baseline",
-            "--level", "4.1",
-            "--intra", "15",  # IDR frame interval
-            "--inline",  # Insert SPS/PPS with each IDR
-            "-o", "-",  # Output to stdout
-        ]
-
-        # FFmpeg command to receive H.264 and push to RTSP
-        ffmpeg_cmd = [
-            "ffmpeg",
-            "-hide_banner",
-            "-loglevel", "warning",
-            "-f", "h264",
-            "-i", "-",  # Read from stdin
-            "-c:v", "copy",  # No re-encoding
-            "-f", "rtsp",
-            "-rtsp_transport", "tcp",
-            rtsp_target,
-        ]
-
-        print(f"Starting camera stream: {self.config.resolution} @ {self.config.fps}fps")
-        print(f"RTSP URL: {rtsp_target}")
-
-        try:
-            # Start rpicam-vid, pipe to ffmpeg
-            self.rpicam_proc = subprocess.Popen(
-                rpicam_cmd,
-                stdout=subprocess.PIPE,
-                stderr=subprocess.PIPE
-            )
-
-            self.ffmpeg_proc = subprocess.Popen(
-                ffmpeg_cmd,
-                stdin=self.rpicam_proc.stdout,
-                stdout=subprocess.PIPE,
-                stderr=subprocess.PIPE
-            )
-
-            # Allow rpicam stdout to be consumed by ffmpeg
-            self.rpicam_proc.stdout.close()
-
-        except FileNotFoundError as e:
-            print(f"ERROR: Required tool not found: {e}")
-            print("Make sure rpicam-vid and ffmpeg are installed.")
-            return False
-        except Exception as e:
-            print(f"ERROR: Failed to start streaming: {e}")
-            return False
-
-        time.sleep(2)  # Give it time to initialize
-
-        if self.rpicam_proc.poll() is not None:
-            stderr = self.rpicam_proc.stderr.read().decode() if self.rpicam_proc.stderr else ""
-            print(f"ERROR: rpicam-vid exited unexpectedly: {stderr}")
-            return False
-
-        print("Stream started successfully!")
-        return True
-
     def start(self) -> bool:
-        """Start the complete streaming pipeline."""
+        """Start the RTSP stream."""
         print("=" * 50)
         print("RPI-RTSP Streamer")
         print("=" * 50)
@@ -253,31 +186,23 @@ class RTSPStreamer:
         if not self._start_mediamtx():
             return False
 
-        if not self._start_rpicam():
-            self.stop()
-            return False
-
         self.running = True
+        print("Stream started successfully!")
         return True
 
     def stop(self) -> None:
-        """Stop all streaming processes."""
+        """Stop the stream."""
         print("\nStopping stream...")
         self.running = False
 
-        for proc, name in [
-            (getattr(self, 'ffmpeg_proc', None), "ffmpeg"),
-            (self.rpicam_proc, "rpicam-vid"),
-            (self.mediamtx_proc, "mediamtx"),
-        ]:
-            if proc and proc.poll() is None:
-                try:
-                    proc.terminate()
-                    proc.wait(timeout=5)
-                except subprocess.TimeoutExpired:
-                    proc.kill()
-                except Exception:
-                    pass
+        if self.mediamtx_proc and self.mediamtx_proc.poll() is None:
+            try:
+                self.mediamtx_proc.terminate()
+                self.mediamtx_proc.wait(timeout=5)
+            except subprocess.TimeoutExpired:
+                self.mediamtx_proc.kill()
+            except Exception:
+                pass
 
         print("Stream stopped")
 
@@ -285,13 +210,6 @@ class RTSPStreamer:
         """Wait for the streaming process to end."""
         try:
             while self.running:
-                # Check if processes are still running
-                if hasattr(self, 'ffmpeg_proc') and self.ffmpeg_proc.poll() is not None:
-                    print("FFmpeg process ended unexpectedly")
-                    break
-                if self.rpicam_proc and self.rpicam_proc.poll() is not None:
-                    print("rpicam-vid process ended unexpectedly")
-                    break
                 if self.mediamtx_proc and self.mediamtx_proc.poll() is not None:
                     print("MediaMTX process ended unexpectedly")
                     break
