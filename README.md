@@ -20,7 +20,7 @@ Lightweight RTSP streamer for Raspberry Pi cameras. Automatically streams your P
 
 ```bash
 # Clone this repository
-git clone https://github.com/YourUsername/RPI-RTSP.git ~/RPI-RTSP
+git clone https://github.com/MohammadAdib/RPI-RTSP.git ~/RPI-RTSP
 
 # Run the setup script
 cd ~/RPI-RTSP
