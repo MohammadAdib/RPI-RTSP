@@ -78,7 +78,7 @@ sudo chmod +x /usr/local/bin/mediamtx
 
 ```bash
 # Clone this repository
-git clone https://github.com/YourUsername/RPI-RTSP.git ~/RPI-RTSP
+git clone https://github.com/MohammadAdib/RPI-RTSP.git ~/RPI-RTSP
 
 # Make script executable
 chmod +x ~/RPI-RTSP/stream.py
