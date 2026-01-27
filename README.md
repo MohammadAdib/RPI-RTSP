@@ -205,6 +205,7 @@ Edit `~/Desktop/stream.json` to customize:
 | `port` | RTSP port | `8554` | Any available port |
 | `path` | Stream path | `stream` | `live`, `camera`, `video` |
 | `bitrate` | Video bitrate (bits/sec) | `5000000` | `2000000` (2 Mbps), `10000000` (10 Mbps), `20000000` (20 Mbps) |
+| `idr_period` | Keyframe interval (frames) | `15` | `5` (fast recovery), `15` (balanced), `30` (less bandwidth) |
 
 **Bitrate recommendations:**
 - Low motion / bandwidth limited: `2000000` - `5000000` (2-5 Mbps)

@@ -28,6 +28,7 @@ class StreamConfig:
     port: int = 8554
     path: str = "stream"
     bitrate: int = 5000000  # Bitrate in bits per second (default 5 Mbps)
+    idr_period: int = 15  # Keyframe interval in frames (lower = faster recovery, more bandwidth)
 
     @property
     def width(self) -> int:
@@ -139,7 +140,7 @@ class RTSPStreamer:
         env["MTX_PATHS_" + self.config.path.upper() + "_RPICAMERAWIDTH"] = str(self.config.width)
         env["MTX_PATHS_" + self.config.path.upper() + "_RPICAMERAHEIGHT"] = str(self.config.height)
         env["MTX_PATHS_" + self.config.path.upper() + "_RPICAMERAFPS"] = str(self.config.fps)
-        env["MTX_PATHS_" + self.config.path.upper() + "_RPICAMERAIDRPERIOD"] = "15"
+        env["MTX_PATHS_" + self.config.path.upper() + "_RPICAMERAIDRPERIOD"] = str(self.config.idr_period)
         env["MTX_PATHS_" + self.config.path.upper() + "_RPICAMERAPROFILE"] = "baseline"
         env["MTX_PATHS_" + self.config.path.upper() + "_RPICAMERALEVEL"] = "4.1"
         env["MTX_PATHS_" + self.config.path.upper() + "_RPICAMERABITRATE"] = str(self.config.bitrate)
