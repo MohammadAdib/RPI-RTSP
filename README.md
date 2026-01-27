@@ -231,6 +231,31 @@ After editing, restart the service:
 sudo systemctl restart rpi-rtsp
 ```
 
+## Configure Static Ethernet IP
+
+Use the included script to configure a static IP on the Ethernet port:
+
+```bash
+bash configure-ethernet.sh <ip_address>
+```
+
+Example:
+```bash
+bash configure-ethernet.sh 10.0.0.5
+```
+
+This will:
+- Set the Ethernet IP to `10.0.0.5`
+- Subnet mask: `255.255.0.0` (/16)
+- Gateway: `10.0.0.1` (first IP in subnet)
+- DNS: `8.8.8.8`
+- Set WiFi as higher priority for internet (metric 200)
+- Set Ethernet as lower priority (metric 600)
+
+This configuration is useful for drone/robot setups where:
+- WiFi connects to the internet or a ground station
+- Ethernet connects directly to a companion computer or video receiver
+
 ## Useful Commands
 
 ```bash
