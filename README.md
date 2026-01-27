@@ -213,6 +213,15 @@ Edit `~/Desktop/stream.json` to customize:
 - High motion (drone, sports): `10000000` - `20000000` (10-20 Mbps)
 - Maximum quality: `25000000`+ (25+ Mbps)
 
+**IDR period (keyframe interval):**
+
+The `idr_period` controls how often a full keyframe (I-frame) is inserted into the stream. This affects both quality and recovery from network issues:
+
+- **Lower values (5-10)**: More frequent keyframes. The decoder can recover faster from packet loss or corruption, reducing blocky artifacts. Uses more bandwidth but recommended for unreliable networks (WiFi, drones).
+- **Higher values (30-60)**: Fewer keyframes. More efficient bandwidth usage but slower recovery from glitches - you may see blocky artifacts for longer when packets are lost.
+
+For drone/FPV use over WiFi, use `idr_period: 5` combined with high bitrate for best results.
+
 After editing, restart the service:
 
 ```bash
