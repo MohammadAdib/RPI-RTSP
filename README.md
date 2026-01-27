@@ -199,11 +199,18 @@ Edit `~/Desktop/stream.json` to customize:
 
 | Option | Description | Default | Example Values |
 |--------|-------------|---------|----------------|
-| `resolution` | Video resolution | `1280x720` | `640x480`, `1920x1080`, `2560x1440` |
+| `resolution` | Video resolution | `1280x720` | `1536x864`, `2304x1296`, `4608x2592` |
 | `fps` | Frames per second | `30` | `15`, `24`, `25`, `30`, `60` |
 | `hostname` | Bind address | `0.0.0.0` | `0.0.0.0` (all interfaces), `192.168.1.x` |
 | `port` | RTSP port | `8554` | Any available port |
 | `path` | Stream path | `stream` | `live`, `camera`, `video` |
+| `bitrate` | Video bitrate (bits/sec) | `5000000` | `2000000` (2 Mbps), `10000000` (10 Mbps), `20000000` (20 Mbps) |
+
+**Bitrate recommendations:**
+- Low motion / bandwidth limited: `2000000` - `5000000` (2-5 Mbps)
+- Normal use: `5000000` - `10000000` (5-10 Mbps)
+- High motion (drone, sports): `10000000` - `20000000` (10-20 Mbps)
+- Maximum quality: `25000000`+ (25+ Mbps)
 
 After editing, restart the service:
 

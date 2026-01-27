@@ -27,6 +27,7 @@ class StreamConfig:
     hostname: str = "0.0.0.0"
     port: int = 8554
     path: str = "stream"
+    bitrate: int = 5000000  # Bitrate in bits per second (default 5 Mbps)
 
     @property
     def width(self) -> int:
@@ -141,10 +142,12 @@ class RTSPStreamer:
         env["MTX_PATHS_" + self.config.path.upper() + "_RPICAMERAIDRPERIOD"] = "15"
         env["MTX_PATHS_" + self.config.path.upper() + "_RPICAMERAPROFILE"] = "baseline"
         env["MTX_PATHS_" + self.config.path.upper() + "_RPICAMERALEVEL"] = "4.1"
+        env["MTX_PATHS_" + self.config.path.upper() + "_RPICAMERABITRATE"] = str(self.config.bitrate)
 
         print(f"Starting MediaMTX on port {self.config.port}...")
         print(f"Resolution: {self.config.resolution}")
         print(f"FPS: {self.config.fps}")
+        print(f"Bitrate: {self.config.bitrate // 1000000} Mbps")
 
         try:
             self.mediamtx_proc = subprocess.Popen(
