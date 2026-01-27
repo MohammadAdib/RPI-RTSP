@@ -22,13 +22,13 @@ CONFIG_PATH = Path.home() / "Desktop" / "stream.json"
 @dataclass
 class StreamConfig:
     """RTSP stream configuration."""
-    resolution: str = "1280x720"
+    resolution: str = "1536x864"
     fps: int = 30
     hostname: str = "0.0.0.0"
     port: int = 8554
     path: str = "stream"
-    bitrate: int = 5000000  # Bitrate in bits per second (default 5 Mbps)
-    idr_period: int = 15  # Keyframe interval in frames (lower = faster recovery, more bandwidth)
+    bitrate: int = 2000000  # Bitrate in bits per second (default 2 Mbps)
+    idr_period: int = 5  # Keyframe interval in frames (lower = faster recovery, more bandwidth)
 
     @property
     def width(self) -> int:
