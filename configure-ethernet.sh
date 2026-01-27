@@ -66,12 +66,37 @@ if command -v nmcli &> /dev/null; then
     sudo nmcli con mod "$CONN_NAME" ipv4.dns "$DNS"
     sudo nmcli con mod "$CONN_NAME" ipv4.method manual
 
-    # Restart connection
+    # Set route metric for ethernet (higher = lower priority)
+    sudo nmcli con mod "$CONN_NAME" ipv4.route-metric 600
+    echo "Ethernet route metric set to 600 (lower priority)"
+
+    # Find and configure WiFi connection (lower metric = higher priority)
+    WIFI_CONN=$(nmcli -t -f NAME,TYPE con show | grep ":.*wireless" | cut -d: -f1 | head -n1)
+    if [ -n "$WIFI_CONN" ]; then
+        echo "Found WiFi connection: $WIFI_CONN"
+        sudo nmcli con mod "$WIFI_CONN" ipv4.route-metric 200
+        echo "WiFi route metric set to 200 (higher priority for internet)"
+    else
+        echo "No WiFi connection found, skipping WiFi priority configuration"
+    fi
+
+    echo ""
+    echo "Restarting connections..."
+
+    # Restart ethernet connection
     sudo nmcli con down "$CONN_NAME" 2>/dev/null || true
     sudo nmcli con up "$CONN_NAME"
 
+    # Restart WiFi connection if it exists
+    if [ -n "$WIFI_CONN" ]; then
+        sudo nmcli con down "$WIFI_CONN" 2>/dev/null || true
+        sudo nmcli con up "$WIFI_CONN" 2>/dev/null || true
+    fi
+
     echo ""
     echo "Configuration applied via NetworkManager"
+    echo "WiFi will be used for internet access (metric 200)"
+    echo "Ethernet will be used for local network/streaming (metric 600)"
 
 # Fallback to dhcpcd if NetworkManager not available
 elif [ -f /etc/dhcpcd.conf ]; then
