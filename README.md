@@ -236,14 +236,14 @@ sudo systemctl restart rpi-rtsp
 Use the included script to configure a static IP on the Ethernet port:
 
 ```bash
-bash configure-ethernet.sh <ip_address> [subnet_prefix]
+sudo bash configure-ethernet.sh <ip_address> [subnet_prefix]
 ```
 
 Examples:
 ```bash
-bash configure-ethernet.sh 10.0.0.5          # /16 subnet (default)
-bash configure-ethernet.sh 10.0.0.5 24       # /24 subnet (255.255.255.0)
-bash configure-ethernet.sh 10.0.0.5 8        # /8 subnet (255.0.0.0)
+sudo bash configure-ethernet.sh 10.0.0.5          # /16 subnet (default)
+sudo bash configure-ethernet.sh 10.0.0.5 24       # /24 subnet (255.255.255.0)
+sudo bash configure-ethernet.sh 10.0.0.5 8        # /8 subnet (255.0.0.0)
 ```
 
 This will:
