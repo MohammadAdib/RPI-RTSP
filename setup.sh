@@ -107,7 +107,8 @@ EOF
 
 sudo systemctl daemon-reload
 sudo systemctl enable rpi-rtsp
-echo "RTSP systemd service created and enabled"
+sudo systemctl start rpi-rtsp
+echo "RTSP systemd service created, enabled, and started"
 
 echo ""
 echo "[7/7] Setting up MAVLink forwarder systemd service..."
@@ -131,7 +132,8 @@ EOF
 
 sudo systemctl daemon-reload
 sudo systemctl enable mavlink-forward
-echo "MAVLink forwarder systemd service created and enabled"
+sudo systemctl start mavlink-forward
+echo "MAVLink forwarder systemd service created, enabled, and started"
 
 echo ""
 echo "=========================================="
@@ -146,12 +148,11 @@ echo ""
 echo "2. Reboot if you just enabled the camera:"
 echo "   sudo reboot"
 echo ""
-echo "3. After reboot, the stream and MAVLink forwarder will start automatically."
-echo "   Or start them now with:"
-echo "   sudo systemctl start rpi-rtsp"
-echo "   sudo systemctl start mavlink-forward"
+echo "3. View stream at: rtsp://$(hostname -I | awk '{print $1}'):8554/stream"
 echo ""
-echo "4. View stream at: rtsp://$(hostname -I | awk '{print $1}'):8554/stream"
+echo "4. Edit config at: $CONFIG_FILE"
 echo ""
-echo "5. Edit config at: $CONFIG_FILE"
+echo "5. MAVLink forwarding: connect a flight controller via USB."
+echo "   Telemetry will be forwarded to UDP port 14550."
+echo "   Check status: sudo systemctl status mavlink-forward"
 echo ""
