@@ -34,7 +34,7 @@ The script will:
 - Install dependencies (socat for MAVLink forwarding)
 - Download and install MediaMTX
 - Create the config file at `~/Desktop/stream.json`
-- Set up systemd services for auto-start on boot (RTSP streaming and MAVLink forwarding)
+- Set up and start systemd services (RTSP streaming and MAVLink forwarding)
 
 After setup, enable the camera if not already done:
 ```bash
