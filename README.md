@@ -258,26 +258,24 @@ This configuration is useful for drone/robot setups where:
 - WiFi connects to the internet or a ground station
 - Ethernet connects directly to a companion computer or video receiver
 
-## MAVLink TCP Forwarding
+## MAVLink UDP Forwarding
 
-The included `mavlink-forward.sh` script automatically detects an ArduPilot flight controller connected via USB and serves the MAVLink telemetry stream over TCP.
+The included `mavlink-forward.sh` script automatically detects an ArduPilot flight controller connected via USB and forwards the MAVLink telemetry stream over UDP to a specified destination IP.
 
 The script:
 - Monitors for USB serial devices (`/dev/ttyACM*`, `/dev/ttyUSB*`)
-- Serves MAVLink data on TCP port 5760 (configurable)
+- Forwards MAVLink data over UDP to port 14550 (configurable)
 - Automatically reconnects if the flight controller is disconnected and reconnected
-- Starts on boot via systemd (configured by `setup.sh`)
-
-Connect from Mission Planner or other GCS using TCP to `<pi-ip>:5760`.
+- Starts on boot via systemd (configured by `setup.sh`, which prompts for the destination IP)
 
 ### Manual Usage
 
 ```bash
-# Default port (5760)
-bash mavlink-forward.sh
+# Forward to a specific IP (default port 14550)
+bash mavlink-forward.sh 10.0.0.6
 
-# Custom port
-bash mavlink-forward.sh 5761
+# Forward to a specific IP and port
+bash mavlink-forward.sh 10.0.0.6 15550
 ```
 
 ### Service Commands
@@ -299,7 +297,7 @@ sudo systemctl stop mavlink-forward
 sudo systemctl disable mavlink-forward
 ```
 
-To change the TCP port for the systemd service, edit `/etc/systemd/system/mavlink-forward.service` and add the port number after the script path, then run `sudo systemctl daemon-reload && sudo systemctl restart mavlink-forward`.
+To change the destination IP or port for the systemd service, edit `/etc/systemd/system/mavlink-forward.service` and update the arguments after the script path (e.g. `mavlink-forward.sh 10.0.0.6 14550`), then run `sudo systemctl daemon-reload && sudo systemctl restart mavlink-forward`.
 
 ## Useful Commands
 

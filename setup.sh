@@ -113,7 +113,14 @@ echo "RTSP systemd service created, enabled, and started"
 echo ""
 echo "[7/7] Setting up MAVLink forwarder systemd service..."
 chmod +x "$SCRIPT_DIR/mavlink-forward.sh"
-sudo tee /etc/systemd/system/mavlink-forward.service > /dev/null << EOF
+
+echo ""
+read -p "Enter the destination IP for MAVLink UDP (e.g. 10.0.0.6): " MAVLINK_DEST_IP
+if [ -z "$MAVLINK_DEST_IP" ]; then
+    echo "No IP provided, skipping MAVLink service setup."
+    echo "You can run mavlink-forward.sh manually: bash mavlink-forward.sh <dest_ip>"
+else
+    sudo tee /etc/systemd/system/mavlink-forward.service > /dev/null << EOF
 [Unit]
 Description=MAVLink UDP Forwarder
 After=network.target
@@ -122,7 +129,7 @@ After=network.target
 Type=simple
 User=$USERNAME
 WorkingDirectory=$SCRIPT_DIR
-ExecStart=/bin/bash $SCRIPT_DIR/mavlink-forward.sh
+ExecStart=/bin/bash $SCRIPT_DIR/mavlink-forward.sh $MAVLINK_DEST_IP
 Restart=always
 RestartSec=5
 
@@ -130,10 +137,12 @@ RestartSec=5
 WantedBy=multi-user.target
 EOF
 
-sudo systemctl daemon-reload
-sudo systemctl enable mavlink-forward
-sudo systemctl start mavlink-forward
-echo "MAVLink forwarder systemd service created, enabled, and started"
+    sudo systemctl daemon-reload
+    sudo systemctl enable mavlink-forward
+    sudo systemctl start mavlink-forward
+    echo "MAVLink forwarder systemd service created, enabled, and started"
+    echo "Forwarding to $MAVLINK_DEST_IP:14550"
+fi
 
 echo ""
 echo "=========================================="
@@ -153,7 +162,6 @@ echo ""
 echo "4. Edit config at: $CONFIG_FILE"
 echo ""
 echo "5. MAVLink forwarding: connect a flight controller via USB."
-echo "   Telemetry will be served on TCP port 5760."
-echo "   Connect from GCS using TCP to $(hostname -I | awk '{print $1}'):5760"
+echo "   Telemetry will be forwarded over UDP to port 14550."
 echo "   Check status: sudo systemctl status mavlink-forward"
 echo ""
