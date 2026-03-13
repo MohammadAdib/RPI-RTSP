@@ -39,15 +39,15 @@ else
 fi
 
 echo ""
-echo "[1/6] Updating package list..."
+echo "[1/7] Updating package list..."
 sudo apt update
 
 echo ""
-echo "[2/6] Installing dependencies..."
-# No additional packages needed - MediaMTX has native Pi camera support
+echo "[2/7] Installing dependencies..."
+sudo apt install -y socat
 
 echo ""
-echo "[3/6] Installing MediaMTX..."
+echo "[3/7] Installing MediaMTX..."
 if command -v mediamtx &> /dev/null; then
     echo "MediaMTX already installed, skipping..."
 else
@@ -64,11 +64,11 @@ else
 fi
 
 echo ""
-echo "[4/6] Setting up stream script..."
+echo "[4/7] Setting up stream script..."
 chmod +x "$SCRIPT_DIR/stream.py"
 
 echo ""
-echo "[5/6] Creating config file..."
+echo "[5/7] Creating config file..."
 CONFIG_FILE="$HOME_DIR/Desktop/stream.json"
 if [ -f "$CONFIG_FILE" ]; then
     echo "Config already exists at $CONFIG_FILE, skipping..."
@@ -87,7 +87,7 @@ EOF
 fi
 
 echo ""
-echo "[6/6] Setting up systemd service..."
+echo "[6/7] Setting up RTSP systemd service..."
 sudo tee /etc/systemd/system/rpi-rtsp.service > /dev/null << EOF
 [Unit]
 Description=RPI RTSP Camera Streamer
@@ -107,7 +107,31 @@ EOF
 
 sudo systemctl daemon-reload
 sudo systemctl enable rpi-rtsp
-echo "Systemd service created and enabled"
+echo "RTSP systemd service created and enabled"
+
+echo ""
+echo "[7/7] Setting up MAVLink forwarder systemd service..."
+chmod +x "$SCRIPT_DIR/mavlink-forward.sh"
+sudo tee /etc/systemd/system/mavlink-forward.service > /dev/null << EOF
+[Unit]
+Description=MAVLink UDP Forwarder
+After=network.target
+
+[Service]
+Type=simple
+User=$USERNAME
+WorkingDirectory=$SCRIPT_DIR
+ExecStart=/bin/bash $SCRIPT_DIR/mavlink-forward.sh
+Restart=always
+RestartSec=5
+
+[Install]
+WantedBy=multi-user.target
+EOF
+
+sudo systemctl daemon-reload
+sudo systemctl enable mavlink-forward
+echo "MAVLink forwarder systemd service created and enabled"
 
 echo ""
 echo "=========================================="
@@ -122,8 +146,10 @@ echo ""
 echo "2. Reboot if you just enabled the camera:"
 echo "   sudo reboot"
 echo ""
-echo "3. After reboot, the stream will start automatically."
-echo "   Or start it now with: sudo systemctl start rpi-rtsp"
+echo "3. After reboot, the stream and MAVLink forwarder will start automatically."
+echo "   Or start them now with:"
+echo "   sudo systemctl start rpi-rtsp"
+echo "   sudo systemctl start mavlink-forward"
 echo ""
 echo "4. View stream at: rtsp://$(hostname -I | awk '{print $1}'):8554/stream"
 echo ""

@@ -31,10 +31,10 @@ bash setup.sh
 ```
 
 The script will:
-- Install dependencies (ffmpeg, rpicam-apps)
+- Install dependencies (socat for MAVLink forwarding)
 - Download and install MediaMTX
 - Create the config file at `~/Desktop/stream.json`
-- Set up the systemd service for auto-start on boot
+- Set up systemd services for auto-start on boot (RTSP streaming and MAVLink forwarding)
 
 After setup, enable the camera if not already done:
 ```bash
@@ -258,23 +258,69 @@ This configuration is useful for drone/robot setups where:
 - WiFi connects to the internet or a ground station
 - Ethernet connects directly to a companion computer or video receiver
 
+## MAVLink UDP Forwarding
+
+The included `mavlink-forward.sh` script automatically detects an ArduPilot flight controller connected via USB and forwards the MAVLink telemetry stream over UDP.
+
+The script:
+- Monitors for USB serial devices (`/dev/ttyACM*`, `/dev/ttyUSB*`)
+- Forwards MAVLink data to UDP port 14550 (configurable)
+- Automatically reconnects if the flight controller is disconnected and reconnected
+- Starts on boot via systemd (configured by `setup.sh`)
+
+### Manual Usage
+
+```bash
+# Default port (14550)
+bash mavlink-forward.sh
+
+# Custom port
+bash mavlink-forward.sh 14560
+```
+
+### Service Commands
+
+```bash
+# Check status
+sudo systemctl status mavlink-forward
+
+# View logs
+sudo journalctl -u mavlink-forward -f
+
+# Restart
+sudo systemctl restart mavlink-forward
+
+# Stop
+sudo systemctl stop mavlink-forward
+
+# Disable auto-start
+sudo systemctl disable mavlink-forward
+```
+
+To change the UDP port for the systemd service, edit `/etc/systemd/system/mavlink-forward.service` and add the port number after the script path, then run `sudo systemctl daemon-reload && sudo systemctl restart mavlink-forward`.
+
 ## Useful Commands
 
 ```bash
 # View service logs
 sudo journalctl -u rpi-rtsp -f
+sudo journalctl -u mavlink-forward -f
 
-# Restart the stream
+# Restart services
 sudo systemctl restart rpi-rtsp
+sudo systemctl restart mavlink-forward
 
-# Stop the stream
+# Stop services
 sudo systemctl stop rpi-rtsp
+sudo systemctl stop mavlink-forward
 
 # Disable auto-start
 sudo systemctl disable rpi-rtsp
+sudo systemctl disable mavlink-forward
 
-# Check if stream is running
+# Check status
 sudo systemctl status rpi-rtsp
+sudo systemctl status mavlink-forward
 ```
 
 ## Troubleshooting
