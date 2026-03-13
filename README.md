@@ -236,18 +236,20 @@ sudo systemctl restart rpi-rtsp
 Use the included script to configure a static IP on the Ethernet port:
 
 ```bash
-bash configure-ethernet.sh <ip_address>
+bash configure-ethernet.sh <ip_address> [subnet_prefix]
 ```
 
-Example:
+Examples:
 ```bash
-bash configure-ethernet.sh 10.0.0.5
+bash configure-ethernet.sh 10.0.0.5          # /16 subnet (default)
+bash configure-ethernet.sh 10.0.0.5 24       # /24 subnet (255.255.255.0)
+bash configure-ethernet.sh 10.0.0.5 8        # /8 subnet (255.0.0.0)
 ```
 
 This will:
 - Set the Ethernet IP to `10.0.0.5`
-- Subnet mask: `255.255.0.0` (/16)
-- Gateway: `10.0.0.1` (first IP in subnet)
+- Subnet mask: based on prefix (defaults to `/16` = `255.255.0.0`)
+- Gateway: first usable IP in the subnet (e.g. `10.0.0.1` for /16)
 - DNS: `8.8.8.8`
 - Set WiFi as higher priority for internet (metric 200)
 - Set Ethernet as lower priority (metric 600)

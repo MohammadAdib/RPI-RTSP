@@ -1,19 +1,23 @@
 #!/bin/bash
 #
 # Configure static IP address on Raspberry Pi ethernet port
-# Usage: bash configure-ethernet.sh <ip_address>
+# Usage: bash configure-ethernet.sh <ip_address> [subnet_prefix]
 # Example: bash configure-ethernet.sh 10.0.0.5
+# Example: bash configure-ethernet.sh 10.0.0.5 24
 #
 
 set -e
 
 if [ -z "$1" ]; then
-    echo "Usage: bash configure-ethernet.sh <ip_address>"
-    echo "Example: bash configure-ethernet.sh 10.0.0.5"
+    echo "Usage: bash configure-ethernet.sh <ip_address> [subnet_prefix]"
+    echo "Example: bash configure-ethernet.sh 10.0.0.5        (defaults to /16)"
+    echo "Example: bash configure-ethernet.sh 10.0.0.5 24     (/24 = 255.255.255.0)"
+    echo "Example: bash configure-ethernet.sh 10.0.0.5 8      (/8  = 255.0.0.0)"
     exit 1
 fi
 
 IP_ADDRESS="$1"
+SUBNET_PREFIX="${2:-16}"
 
 # Validate IP address format
 if ! [[ "$IP_ADDRESS" =~ ^[0-9]+\.[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
@@ -21,17 +25,40 @@ if ! [[ "$IP_ADDRESS" =~ ^[0-9]+\.[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
     exit 1
 fi
 
-# Extract first two octets for gateway calculation (assumes /16 subnet)
-IFS='.' read -r OCT1 OCT2 OCT3 OCT4 <<< "$IP_ADDRESS"
-GATEWAY="${OCT1}.${OCT2}.0.1"
-SUBNET_MASK="255.255.0.0"
+# Validate subnet prefix
+if ! [[ "$SUBNET_PREFIX" =~ ^[0-9]+$ ]] || [ "$SUBNET_PREFIX" -lt 1 ] || [ "$SUBNET_PREFIX" -gt 32 ]; then
+    echo "ERROR: Invalid subnet prefix: /$SUBNET_PREFIX (must be 1-32)"
+    exit 1
+fi
+
+# Calculate subnet mask from prefix length
+calculate_subnet_mask() {
+    local prefix=$1
+    local mask=$((0xFFFFFFFF << (32 - prefix) & 0xFFFFFFFF))
+    printf "%d.%d.%d.%d" $(( (mask >> 24) & 255 )) $(( (mask >> 16) & 255 )) $(( (mask >> 8) & 255 )) $(( mask & 255 ))
+}
+
+# Calculate gateway (first usable IP in the subnet)
+calculate_gateway() {
+    local ip=$1
+    local prefix=$2
+    IFS='.' read -r o1 o2 o3 o4 <<< "$ip"
+    local ip_int=$(( (o1 << 24) + (o2 << 16) + (o3 << 8) + o4 ))
+    local mask=$(( 0xFFFFFFFF << (32 - prefix) & 0xFFFFFFFF ))
+    local network=$(( ip_int & mask ))
+    local gw=$(( network + 1 ))
+    printf "%d.%d.%d.%d" $(( (gw >> 24) & 255 )) $(( (gw >> 16) & 255 )) $(( (gw >> 8) & 255 )) $(( gw & 255 ))
+}
+
+SUBNET_MASK=$(calculate_subnet_mask "$SUBNET_PREFIX")
+GATEWAY=$(calculate_gateway "$IP_ADDRESS" "$SUBNET_PREFIX")
 DNS="8.8.8.8"
 
 echo "=========================================="
 echo "Ethernet Static IP Configuration"
 echo "=========================================="
 echo "IP Address:  $IP_ADDRESS"
-echo "Subnet Mask: $SUBNET_MASK (/16)"
+echo "Subnet Mask: $SUBNET_MASK (/$SUBNET_PREFIX)"
 echo "Gateway:     $GATEWAY"
 echo "DNS:         $DNS"
 echo "=========================================="
@@ -61,7 +88,7 @@ if command -v nmcli &> /dev/null; then
     fi
 
     # Configure static IP
-    sudo nmcli con mod "$CONN_NAME" ipv4.addresses "${IP_ADDRESS}/16"
+    sudo nmcli con mod "$CONN_NAME" ipv4.addresses "${IP_ADDRESS}/${SUBNET_PREFIX}"
     sudo nmcli con mod "$CONN_NAME" ipv4.gateway "$GATEWAY"
     sudo nmcli con mod "$CONN_NAME" ipv4.dns "$DNS"
     sudo nmcli con mod "$CONN_NAME" ipv4.method manual
@@ -109,7 +136,7 @@ elif [ -f /etc/dhcpcd.conf ]; then
     sudo tee -a /etc/dhcpcd.conf > /dev/null << EOF
 
 interface ${ETH_INTERFACE}
-static ip_address=${IP_ADDRESS}/16
+static ip_address=${IP_ADDRESS}/${SUBNET_PREFIX}
 static routers=${GATEWAY}
 static domain_name_servers=${DNS}
 EOF
