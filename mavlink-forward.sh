@@ -1,23 +1,22 @@
 #!/bin/bash
 #
-# MAVLink UDP Forwarder
+# MAVLink TCP Forwarder
 # Detects an ArduPilot flight controller connected via USB serial
-# and forwards the MAVLink stream over UDP.
+# and forwards the MAVLink stream over TCP.
 #
-# Usage: bash mavlink-forward.sh [udp_port]
-# Default UDP port: 14550
+# Usage: bash mavlink-forward.sh [tcp_port]
+# Default TCP port: 5760
 #
 
 set -e
 
-UDP_PORT="${1:-14550}"
-UDP_DEST="0.0.0.0"
+TCP_PORT="${1:-5760}"
 BAUD_RATE=115200
 
 echo "=========================================="
-echo "MAVLink UDP Forwarder"
+echo "MAVLink TCP Forwarder"
 echo "=========================================="
-echo "UDP Port:  $UDP_PORT"
+echo "TCP Port:  $TCP_PORT"
 echo "Baud Rate: $BAUD_RATE"
 echo "=========================================="
 
@@ -37,13 +36,13 @@ find_serial_device() {
 
 forward_mavlink() {
     local device="$1"
-    echo "$(date): Forwarding MAVLink from $device to UDP port $UDP_PORT"
+    echo "$(date): Serving MAVLink from $device on TCP port $TCP_PORT"
 
     # Configure serial port
     stty -F "$device" "$BAUD_RATE" raw -echo -echoe -echok -echoctl -echoke
 
-    # Forward serial data to UDP using socat
-    socat "FILE:${device},b${BAUD_RATE},raw" "UDP4-DATAGRAM:${UDP_DEST}:${UDP_PORT},broadcast" 2>&1
+    # Forward serial data over TCP (Pi acts as server, clients connect to this port)
+    socat "FILE:${device},b${BAUD_RATE},raw" "TCP4-LISTEN:${TCP_PORT},reuseaddr,fork" 2>&1
 }
 
 echo "Watching for flight controller..."
